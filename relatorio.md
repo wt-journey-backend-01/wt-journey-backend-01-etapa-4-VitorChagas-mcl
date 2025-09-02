@@ -1,346 +1,359 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 7 créditos restantes para usar o sistema de feedback AI.
+Você tem 6 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para VitorChagas-mcl:
 
-Nota final: **75.1/100**
+Nota final: **27.5/100**
 
-Olá, VitorChagas-mcl! 🚀 Que jornada incrível você tem trilhado até aqui! Parabéns por todo esforço e dedicação para construir essa API REST segura e funcional. 🎉
+Olá, VitorChagas-mcl! 🚀 Que jornada intensa você teve até aqui! Antes de mais nada, parabéns pelos acertos que você fez, especialmente na parte da autenticação básica, criação de usuários, login com JWT, logout e exclusão de usuários — você conseguiu passar testes importantes que envolvem esses fluxos essenciais! 🎉 Isso mostra que você já tem uma boa base para trabalhar com segurança em APIs.
 
----
-
-## 🎉 Pontos Fortes e Conquistas Bônus
-
-Primeiramente, quero destacar que você conseguiu implementar muito bem várias funcionalidades essenciais:
-
-- **Cadastro, login e logout de usuários funcionando com JWT.**
-- **Hashing de senhas com bcrypt** e validação rigorosa da senha no registro.
-- **Proteção das rotas** com middleware de autenticação.
-- **CRUD completo para agentes e casos**, com validações e mensagens de erro apropriadas.
-- Implementou corretamente a filtragem simples de casos por status e agente, que é um bônus importante.
-- A estrutura geral dos arquivos e pastas está alinhada com o esperado, com pastas claras para controllers, repositories, middlewares, routes, db, e utils.
-- Uso correto do Knex para interagir com o banco e as migrations estão presentes.
-
-Você está no caminho certo para um projeto profissional e seguro! 👏
+Além disso, você aplicou o middleware de autenticação nas rotas de agentes e casos corretamente, garantindo que usuários não autenticados não consigam acessar esses recursos. Muito bom! 👏 Também notei que você estruturou seu projeto de forma próxima da arquitetura MVC, com controllers, routes, repositories e middlewares organizados em pastas — isso é fundamental para projetos profissionais.
 
 ---
 
-## ⚠️ Análise dos Testes que Falharam e Causas Raiz
-
-Agora, vamos analisar juntos os testes que falharam para destravar o projeto e garantir que tudo funcione perfeitamente.
+### 🚨 Agora vamos falar dos pontos que travaram sua nota, especialmente os testes que falharam e que indicam áreas críticas para melhorar:
 
 ---
 
-### 1. Falha: `'USERS: Recebe erro 400 ao tentar criar um usuário com e-mail já em uso'`
+## 1. Falhas no Validador de Usuário no Endpoint de Registro (POST /auth/register)
 
-**O que acontece?**
+**Testes que falharam:**
 
-No seu `authController.register`, você faz a verificação de e-mail já existente:
+- Receber erro 400 ao tentar criar usuário com nome vazio ou nulo;
+- Receber erro 400 ao tentar criar usuário com email vazio ou nulo;
+- Receber erro 400 ao tentar criar usuário com senha inválida (curta, sem números, sem caractere especial, sem letra maiúscula, sem letras);
+- Receber erro 400 ao tentar criar usuário com campo extra ou faltante;
+- Receber erro 400 ao tentar criar usuário com e-mail já em uso.
 
-```js
+**Análise da causa raiz:**
+
+No seu `authController.js`, a função `create` está tentando validar os dados do usuário, mas o retorno e as mensagens não estão exatamente no formato esperado pelos testes.
+
+Veja este trecho do seu código:
+
+```javascript
+if (Object.keys(extras).length > 0) {
+  return res.status(400).json({ mensagem: "Campos extras não permitidos" });
+}
+
+if (!nome || typeof nome !== 'string' || nome.trim() === '') {
+  return res.status(400).json({ mensagem: "Nome é obrigatório" });
+}
+if (!email || typeof email !== 'string' || email.trim() === '') {
+  return res.status(400).json({ mensagem: "Email é obrigatório" });
+}
+if (!senha || !validarSenha(senha)) {
+  return res.status(400).json({ mensagem: "Senha inválida" });
+}
+
 const usuarioExistente = await usuariosRepository.findByEmail(email);
 if (usuarioExistente) {
-  return res.status(400).json({ mensagem: "Email já está em uso" });
+  return res.status(400).json({ status: 400, message: "Email já está em uso" });
 }
 ```
 
-Isso está correto. Porém, o teste espera que a resposta de erro tenha um formato específico, provavelmente com um campo `status: 400` e uma estrutura de erro padronizada.
+O problema aqui é que os testes esperam que o retorno de erros contenha **status 400** e um campo `message` (ou `mensagem`?), mas principalmente que as mensagens de erro sejam **mais detalhadas e específicas**, por exemplo:
 
-**Por que pode estar falhando?**
+- Para senha inválida, o teste espera uma mensagem que informe os critérios da senha (mínimo 8 caracteres, letras maiúsculas, minúsculas, números e caractere especial).
+- Para campos extras, o teste espera erro 400 com uma mensagem clara.
+- Para campos vazios ou nulos, o teste espera erro 400 com mensagens específicas para cada campo.
 
-- Você retorna `{ mensagem: "Email já está em uso" }`, mas o teste pode esperar `{ status: 400, message: "Email já está em uso" }` (note o uso de `message` e o campo `status`).
-- Além disso, no login você usa `mensagem` e no restante do código `message` ou `mensagem`? A inconsistência pode confundir os testes.
-- Também, o teste pode estar esperando o campo `message` no singular, padrão REST.
+Além disso, a função `create` retorna o novo usuário diretamente, mas não está retornando o status code 201 com o formato esperado pelo teste (que pode ser um objeto JSON com o usuário criado, sem expor a senha).
 
-**Como melhorar?**
+**Sugestões para corrigir:**
 
-Padronize a resposta de erro para algo como:
+- Padronize as mensagens de erro para que sejam claras e sigam o padrão esperado.
+- Em vez de retornar a primeira validação que falha, acumule os erros em um array e retorne todos juntos (como você fez para agentes e casos). Isso ajuda o cliente a entender todos os problemas de uma vez.
+- Não retorne a senha do usuário criado no JSON de resposta.
+- Use o campo `message` (em português ou inglês, mas consistente) para as mensagens de erro.
 
-```js
-return res.status(400).json({ status: 400, message: "Email já está em uso" });
-```
+Exemplo de validação mais robusta:
 
-Assim, mantém consistência e atende ao esperado.
+```javascript
+async function create(req, res, next) {
+  try {
+    const { nome, email, senha, ...extras } = req.body;
+    const errors = [];
 
----
-
-### 2. Falhas em rotas de agentes e casos sem token JWT, retornando 401 esperado, mas às vezes 404 para ID inválido
-
-Exemplos:  
-- `'AGENTS: Recebe status code 401 ao tentar criar agente corretamente mas sem header de autorização com token JWT'`  
-- `'AGENTS: Recebe status 404 ao tentar buscar um agente com ID em formato inválido'`
-
-**O que acontece?**
-
-Você implementou o middleware `authMiddleware` que verifica o token JWT e retorna 401 se não enviado ou inválido:
-
-```js
-function authMiddleware(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader) {
-    return res.status(401).json({ mensagem: "Token necessário" });
-  }
-
-  const token = authHeader.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ mensagem: "Token necessário" });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(401).json({ mensagem: "Token inválido" });
+    if (Object.keys(extras).length > 0) {
+      errors.push({ field: "extras", message: "Campos extras não permitidos" });
     }
-    req.user = user;
-    next();
-  });
+    if (!nome || typeof nome !== 'string' || nome.trim() === '') {
+      errors.push({ field: "nome", message: "Nome é obrigatório" });
+    }
+    if (!email || typeof email !== 'string' || email.trim() === '') {
+      errors.push({ field: "email", message: "Email é obrigatório" });
+    }
+    if (!senha) {
+      errors.push({ field: "senha", message: "Senha é obrigatória" });
+    } else if (!validarSenha(senha)) {
+      errors.push({ field: "senha", message: "Senha deve ter no mínimo 8 caracteres, incluir letra maiúscula, minúscula, número e caractere especial" });
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+    }
+
+    const usuarioExistente = await usuariosRepository.findByEmail(email);
+    if (usuarioExistente) {
+      return res.status(400).json({ status: 400, message: "Email já está em uso" });
+    }
+
+    const senhaHasheada = await bcrypt.hash(senha, 10);
+    const novoUsuario = await usuariosRepository.create({ nome, email, senha: senhaHasheada });
+
+    // Não retorne a senha no corpo da resposta
+    const { senha: _, ...usuarioSemSenha } = novoUsuario;
+
+    return res.status(201).json(usuarioSemSenha);
+
+  } catch (error) {
+    next(error);
+  }
 }
 ```
 
-**Possível problema:**
-
-- O middleware está correto, mas no arquivo `server.js` e nas rotas de agentes e casos, não há aplicação explícita do middleware para proteger as rotas.  
-- Ou seja, as rotas de `/agentes` e `/casos` não estão protegidas, então as requisições sem token não estão sendo barradas com 401, e sim executando o controller, que pode retornar 404 para ID inválido.
-
-**Como corrigir?**
-
-Você deve aplicar o middleware de autenticação nas rotas que precisam ser protegidas. Por exemplo, no `routes/agentesRoutes.js`:
-
-```js
-const authMiddleware = require('../middlewares/authMiddleware');
-
-router.use(authMiddleware); // Protege todas as rotas abaixo
-
-// ou proteger rota por rota, assim:
-
-router.get('/', authMiddleware, agentesController.findAll);
-router.get('/:id', authMiddleware, agentesController.findById);
-router.post('/', authMiddleware, agentesController.create);
-// e assim para as demais rotas
-```
-
-Mesmo raciocínio para `routes/casosRoutes.js`.
-
-**Por que isso é importante?**
-
-Sem essa proteção, qualquer pessoa pode acessar rotas sensíveis sem autenticação, comprometendo a segurança da API. Além disso, os testes esperam esse comportamento.
+Dessa forma, você atende vários testes de validação simultaneamente.
 
 ---
 
-### 3. Falhas em IDs inválidos retornando 404
+## 2. Formato da Resposta no Login
 
-Exemplo: `'AGENTS: Recebe status code 404 ao tentar buscar um agente com ID em formato inválido'`
+O teste espera que o endpoint de login retorne um objeto com a propriedade `access_token` contendo o token JWT, e não um campo `token` ou outros.
 
-**O que acontece?**
+Veja seu trecho atual:
 
-No seu controller, você busca o agente pelo ID recebido:
+```javascript
+return res.status(200).json({
+    status: 200,
+    mensagem: "Login realizado com sucesso",
+    user: { id: usuario.id, email: usuario.email },
+    token
+});
+```
 
-```js
-const id = req.params.id;
+Aqui, o teste espera algo assim:
+
+```json
+{
+  "access_token": "token aqui"
+}
+```
+
+**Como corrigir:**
+
+Altere seu retorno para:
+
+```javascript
+return res.status(200).json({ access_token: token });
+```
+
+Assim seu endpoint estará alinhado com o esperado e os testes passarão.
+
+---
+
+## 3. Middleware de Autenticação — Falha ao Usar `process.env.JWT_SECRET`
+
+Seu middleware `authMiddleware.js` faz:
+
+```javascript
+jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  if (err) {
+    return res.status(401).json({ mensagem: "Token inválido" });
+  }
+  req.user = user;
+  next();
+});
+```
+
+Mas, no seu `authController.js`, você usa:
+
+```javascript
+process.env.JWT_SECRET || "chave_secreta"
+```
+
+Ou seja, no middleware, se a variável `JWT_SECRET` não estiver definida, o valor será `undefined`, o que pode causar falha na verificação do token.
+
+**Recomendo** que você padronize o uso da variável de ambiente em todo o projeto, garantindo que o `JWT_SECRET` esteja sempre definido (e que o arquivo `.env` esteja carregado corretamente).
+
+No middleware, faça:
+
+```javascript
+const secret = process.env.JWT_SECRET || "chave_secreta";
+
+jwt.verify(token, secret, (err, user) => {
+  if (err) {
+    return res.status(401).json({ mensagem: "Token inválido" });
+  }
+  req.user = user;
+  next();
+});
+```
+
+E garanta que você está usando o pacote `dotenv` para carregar as variáveis de ambiente no início da aplicação (geralmente no `server.js`):
+
+```javascript
+require('dotenv').config();
+```
+
+---
+
+## 4. Rotas de Autenticação com Middleware Indevido
+
+No arquivo `routes/authRoutes.js`, você colocou o middleware de autenticação em rotas que deveriam ser públicas, como `POST /auth/register` e `POST /auth/login`:
+
+```javascript
+router.post('/login', authMiddleware, authController.login);
+router.post('/register', authMiddleware, authController.create);
+```
+
+Isso bloqueia o acesso para usuários não autenticados, o que não faz sentido para registro e login.
+
+**Correção:**
+
+Remova o `authMiddleware` dessas rotas:
+
+```javascript
+router.post('/login', authController.login);
+router.post('/register', authController.create);
+```
+
+Assim, usuários poderão se registrar e logar sem token.
+
+---
+
+## 5. Ausência da Migration para a Tabela `usuarios`
+
+No seu arquivo de migration (`20250802190416_solution_migrations.js`), você criou as tabelas `agentes` e `casos`, mas não criou a tabela `usuarios`, que é essencial para o desafio da autenticação.
+
+Sem essa tabela, a persistência dos usuários não funciona, e o sistema não consegue salvar ou buscar usuários.
+
+**Você precisa criar uma migration para a tabela `usuarios` com os campos:**
+
+- `id` (auto increment, chave primária),
+- `nome` (string, obrigatório),
+- `email` (string único, obrigatório),
+- `senha` (string, obrigatório).
+
+Exemplo básico:
+
+```javascript
+await knex.schema.createTable('usuarios', table => {
+  table.increments('id').primary();
+  table.string('nome').notNullable();
+  table.string('email').notNullable().unique();
+  table.string('senha').notNullable();
+});
+```
+
+Sem essa tabela, os testes relacionados a usuários vão falhar.
+
+---
+
+## 6. Endpoint `/usuarios/me` Não Está Implementado nas Rotas
+
+Você implementou o método `me` no `authController.js` e protegeu a rota em `authRoutes.js`:
+
+```javascript
+router.get('/me', authMiddleware, authController.me);
+```
+
+Mas o teste bônus que falhou indica que talvez a rota não esteja funcionando corretamente, possivelmente por problemas no middleware ou no controller.
+
+Verifique se o middleware está funcionando e se o controller está retornando os dados corretos, sem expor a senha.
+
+---
+
+## 7. Pequenos Detalhes no Código dos Controllers (Exemplo: `agentesController.js`)
+
+No seu método `findById` de `agentesController.js`, você tem:
+
+```javascript
+async findById(req, res) {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    return res.status(404).json({ message: "ID inválido" });
+  }
+  agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
+  res.json(agente);
+},
+```
+
+Aqui você está usando a variável `agente` que não foi definida no escopo — provavelmente esqueceu de buscar o agente no banco.
+
+**Correção:**
+
+Busque o agente antes de formatar a data:
+
+```javascript
 const agente = await agentesRepository.findById(id);
 if (!agente) {
-  return res.status(404).json({ message: 'Agente não encontrado' });
+  return res.status(404).json({ message: "Agente não encontrado" });
 }
-```
-
-**Problema:**
-
-- Se o ID passado na URL não for um número válido (ex: texto, símbolo), o banco pode lançar erro ou retornar vazio.
-- Você não está validando se o ID tem formato válido antes de consultar o banco.
-- Isso pode levar a erros inesperados ou respostas inconsistentes.
-
-**Como melhorar?**
-
-Antes de chamar o repositório, valide o ID:
-
-```js
-const id = Number(req.params.id);
-if (isNaN(id)) {
-  return res.status(404).json({ message: "ID inválido" });
-}
-```
-
-Assim você garante que IDs inválidos já retornam 404 sem tentar consultar o banco.
-
----
-
-### 4. Logout retornando 200 mas sem invalidar token
-
-Você implementou o logout assim:
-
-```js
-async function logout(req, res){
-  let token = req.headers['authorization'];
-  if(!token){
-    return res.status(401).json("Token necessario");
-  }
-  token = token.split(" ")[1];
-  res.status(200).json("logout realizado com sucesso");
-}
-```
-
-**Problema:**
-
-- O logout apenas retorna sucesso, mas não invalida o token JWT (que é stateless).
-- Como JWT é stateless, para invalidar o token você precisaria implementar blacklist ou controle de refresh token.
-- O teste pode aceitar 200 ou 204, mas sem retorno, e espera que o token seja invalidado (pelo menos no fluxo do teste).
-
-**Sugestão:**
-
-- Para este desafio, o logout pode ser apenas um endpoint que responde 204 sem corpo, já que o JWT não pode ser invalidado facilmente no backend sem blacklist.
-
-```js
-async function logout(req, res) {
-  // Apenas responde sucesso
-  res.status(204).send();
-}
-```
-
-- Se quiser, pode implementar blacklist de tokens para invalidar, mas não obrigatório.
-
----
-
-### 5. Falta de documentação no arquivo `INSTRUCTIONS.md`
-
-O arquivo está vazio:
-
-```md
-# ARQUIVO: INSTRUCTIONS.md
-```
-
-**Problema:**
-
-O desafio pede documentação para registrar, logar, uso do token JWT no header, e fluxo de autenticação.
-
-**Por que isso importa?**
-
-- Documentação é essencial para que outros desenvolvedores e clientes entendam como usar a API.
-- Também pode ser requisito para aprovação do projeto.
-
-**Sugestão rápida:**
-
-Preencha o `INSTRUCTIONS.md` com instruções claras, por exemplo:
-
-```md
-# Instruções para Autenticação
-
-## Registro de Usuário
-POST /auth/register
-Body:
-{
-  "nome": "Seu Nome",
-  "email": "email@exemplo.com",
-  "senha": "SenhaForte1!"
-}
-
-## Login de Usuário
-POST /auth/login
-Body:
-{
-  "email": "email@exemplo.com",
-  "senha": "SenhaForte1!"
-}
-Resposta:
-{
-  "access_token": "seu.token.jwt.aqui"
-}
-
-## Uso do Token JWT
-Inclua o token no header Authorization:
-Authorization: Bearer <access_token>
-
-## Logout
-POST /auth/logout
-Header Authorization com token válido.
+agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
+res.json(agente);
 ```
 
 ---
 
-### 6. Testes bônus que falharam - Filtragem avançada e endpoint `/usuarios/me`
+## 8. Documentação INSTRUCTIONS.md Incompleta
 
-Você já implementou parte da filtragem simples em `casosController.findAll`, mas:
+Seu arquivo `INSTRUCTIONS.md` está incompleto, começando com `## 📌 Registro de Usuário` mas sem o conteúdo.
 
-- Não há endpoint `/usuarios/me` para retornar dados do usuário autenticado.
-- Não há filtragem avançada para agentes por data de incorporação com sorting.
-- Não há busca de agente responsável por caso.
+Para entregar um projeto profissional, é fundamental documentar:
 
-**Por que isso acontece?**
+- Como registrar e logar usuários,
+- Como enviar o token JWT no header `Authorization`,
+- Fluxo de autenticação esperado.
 
-- Esses são bônus que exigem endpoints e lógica adicionais.
-- Por exemplo, `/usuarios/me` pode ser implementado assim:
-
-```js
-// Em routes/usuariosRoutes.js (novo arquivo)
-const express = require('express');
-const router = express.Router();
-const authMiddleware = require('../middlewares/authMiddleware');
-const usuariosController = require('../controllers/usuariosController');
-
-router.get('/me', authMiddleware, usuariosController.me);
-
-module.exports = router;
-
-// Em controllers/usuariosController.js (novo arquivo)
-async function me(req, res) {
-  const usuario = await usuariosRepository.findById(req.user.id);
-  if (!usuario) {
-    return res.status(404).json({ message: "Usuário não encontrado" });
-  }
-  res.json({ id: usuario.id, nome: usuario.nome, email: usuario.email });
-}
-
-module.exports = { me };
-```
-
-- A filtragem avançada para agentes pode ser feita atualizando o repositório e controller para aceitar query params e ordenar.
+Isso ajuda outros desenvolvedores e usuários da API a entenderem como usar seu sistema.
 
 ---
 
-## 🛠️ Outras Recomendações Gerais
+# Recursos que Recomendo para Você Estudar e Melhorar
 
-- **Padronize as mensagens de erro e sucesso**, use sempre `status` e `message` para facilitar manutenção e testes.
-- **Proteja todas as rotas sensíveis com o middleware de autenticação.**
-- **Valide IDs antes de consultar o banco para evitar erros inesperados.**
-- **Preencha a documentação para facilitar uso e avaliação.**
-
----
-
-## 📚 Recursos Recomendados para Você
-
-- Para entender melhor **autenticação e segurança JWT**, recomendo fortemente este vídeo feito pelos meus criadores que explica os conceitos básicos e fundamentais:  
+- Para autenticação com JWT e bcrypt, recomendo fortemente este vídeo, feito pelos meus criadores, que fala muito bem sobre os conceitos básicos e fundamentais da cibersegurança:  
   https://www.youtube.com/watch?v=Q4LQOfYwujk
 
-- Para aprofundar no uso prático de JWT na sua aplicação Node.js:  
+- Para entender melhor o uso prático de JWT, veja este vídeo:  
   https://www.youtube.com/watch?v=keS0JWOypIU
 
-- Para aprender sobre **hashing de senhas com bcrypt e JWT juntos**:  
+- Para aprofundar no uso de bcrypt e JWT juntos, veja este tutorial:  
   https://www.youtube.com/watch?v=L04Ln97AwoY
 
-- Para aprimorar a **estrutura MVC e organização do seu projeto Node.js**:  
+- Para aprender a organizar seu projeto com MVC e boas práticas:  
   https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
 
-- Caso tenha dúvidas sobre **configuração do banco com Docker e Knex**, veja:  
-  https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s
+- Para entender como configurar seu banco PostgreSQL com Docker e Knex, essencial para rodar migrations e seeds corretamente:  
+  https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s  
+  e também:  
+  https://www.youtube.com/watch?v=dXWy_aGCW1E
+
+- Para dominar Knex e manipular o banco de dados com queries corretas:  
+  https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s
 
 ---
 
-## 📝 Resumo dos Principais Pontos para Focar
+# Resumo dos Principais Pontos para Focar e Melhorar
 
-- Padronizar mensagens de erro, especialmente no registro de usuário (usar `status` e `message`).
-- Aplicar o middleware de autenticação (`authMiddleware`) em todas as rotas de agentes e casos para proteger os endpoints.
-- Validar IDs recebidos nas rotas para garantir que são números válidos antes de consultar o banco.
-- Ajustar o endpoint de logout para responder 204 sem corpo e considerar a limitação do JWT stateless.
-- Preencher o arquivo `INSTRUCTIONS.md` com a documentação clara dos endpoints de autenticação e uso do token.
-- Implementar os endpoints bônus, especialmente `/usuarios/me` e filtragem avançada para melhorar a nota.
-- Manter consistência no uso do idioma e nomes dos campos nas respostas (`message` vs `mensagem`).
+- [ ] Corrigir a validação no registro de usuários para acumular e retornar erros claros e detalhados, conforme esperado pelos testes, e evitar retornar senha no JSON de resposta.
+- [ ] Ajustar o formato da resposta do login para retornar `{ access_token: "token" }` e status 200.
+- [ ] Remover o middleware de autenticação das rotas públicas (`/auth/register` e `/auth/login`).
+- [ ] Garantir que a variável de ambiente `JWT_SECRET` esteja sempre definida e usada consistentemente no middleware e no controller.
+- [ ] Criar a migration para a tabela `usuarios` no banco de dados.
+- [ ] Corrigir erros no controller de agentes, como buscar o agente antes de usar seus dados.
+- [ ] Completar a documentação do arquivo `INSTRUCTIONS.md` com instruções claras para registro, login, uso do token e fluxo de autenticação.
+- [ ] Testar a rota `/usuarios/me` para garantir que retorna os dados do usuário autenticado corretamente.
+- [ ] Verificar se o `.env` está carregado corretamente no `server.js` com `require('dotenv').config();`.
 
 ---
 
-Vitor, você está muito próximo de uma API robusta e segura! 🚀 Com essas correções, seu projeto vai ficar ainda mais profissional e pronto para produção. Continue nessa pegada, que seu aprendizado está brilhando! 💪✨
+Vitor, você já está no caminho certo! Essas correções vão destravar a maioria dos testes que falharam e deixar sua aplicação muito mais robusta e profissional. Continue firme, revise com calma cada ponto, e aproveite os vídeos que recomendei para consolidar seu aprendizado. 🚀
 
-Se precisar de ajuda para implementar alguma dessas melhorias, me chama que te ajudo no passo a passo!
+Se precisar, volte aqui para tirar dúvidas — estou aqui para ajudar no seu crescimento! 💪✨
 
-Um abraço e sucesso na jornada! 👊😁
+Boa sorte e bons códigos! 👊😄
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
