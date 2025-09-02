@@ -6,9 +6,9 @@ app.use(express.json());
 const errorHandler = require("./utils/errorHandler");
 const agentesRoutes = require("./routes/agentesRoutes");
 const casosRoutes = require("./routes/casosRoutes");
-const authMiddleware = require("./middlewares/authMiddleware");
+const authRoutes = require("./routes/authRoutes");
 
-app.use("/auth", authMiddleware);
+app.use("/auth", authRoutes);
 app.use("/casos", casosRoutes);
 app.use("/agentes", agentesRoutes);
 

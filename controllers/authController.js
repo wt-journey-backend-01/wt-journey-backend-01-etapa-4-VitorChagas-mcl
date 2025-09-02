@@ -90,6 +90,11 @@ async function logout(req, res){
 
 async function heshSenha(senha) {
   const tentativas = 10;
+  if (!senha) {
+  errors.push({ field: "senha", message: "Senha é obrigatória" });
+} else if (!validarSenha(senha)) {
+  errors.push({ field: "senha", message: "Senha deve ter no mínimo 8 caracteres, incluir letra maiúscula, minúscula, número e caractere especial" });
+}
   return await bcrypt.hash(senha, tentativas);
 }
 
