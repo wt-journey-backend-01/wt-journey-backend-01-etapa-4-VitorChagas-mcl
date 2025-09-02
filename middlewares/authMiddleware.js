@@ -11,6 +11,7 @@ function authMiddleware(req, res, next){
         if(err){
             return res.status(403).json({mensagem: "token invalido"})
         }
+        req.user = user;
         next();
     });
 }
