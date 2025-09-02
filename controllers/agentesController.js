@@ -46,12 +46,11 @@ module.exports = {
   },
 
   async findById(req, res) {
+    const id = req.params.id;
     const agente = await agentesRepository.findById(id);
     if (!agente) {
       return res.status(404).json({ message: "Agente não encontrado" });
     }
-    agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
-    res.json(agente);
     agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
     res.json(agente);
   },
