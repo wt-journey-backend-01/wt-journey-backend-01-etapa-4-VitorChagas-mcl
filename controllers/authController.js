@@ -28,17 +28,10 @@ async function login(req, res, next) {
             process.env.JWT_SECRET || "chave_secreta",
             { expiresIn: "1h" }
         );
-
-        return res.status(200).json({
-            status: 200,
-            mensagem: "Login realizado com sucesso",
-            user: { id: usuario.id, email: usuario.email },
-            token
-        });
-
-    } catch (error) {
-        next(error);
-    }
+      return res.status(200).json({ access_token: token });
+      } catch (error) {
+          next(error);
+      }
 }
 
 function validarSenha(senha) {
@@ -49,19 +42,25 @@ function validarSenha(senha) {
 async function create(req, res, next) {
   try {
     const { nome, email, senha, ...extras } = req.body;
+    const errors = [];
 
     if (Object.keys(extras).length > 0) {
-      return res.status(400).json({ mensagem: "Campos extras não permitidos" });
+      errors.push({ field: "extras", message: "Campos extras não permitidos" });
     }
-
     if (!nome || typeof nome !== 'string' || nome.trim() === '') {
-      return res.status(400).json({ mensagem: "Nome é obrigatório" });
+      errors.push({ field: "nome", message: "Nome é obrigatório" });
     }
     if (!email || typeof email !== 'string' || email.trim() === '') {
-      return res.status(400).json({ mensagem: "Email é obrigatório" });
+      errors.push({ field: "email", message: "Email é obrigatório" });
     }
-    if (!senha || !validarSenha(senha)) {
-      return res.status(400).json({ mensagem: "Senha inválida" });
+    if (!senha) {
+      errors.push({ field: "senha", message: "Senha é obrigatória" });
+    } else if (!validarSenha(senha)) {
+      errors.push({ field: "senha", message: "Senha deve ter no mínimo 8 caracteres, incluir letra maiúscula, minúscula, número e caractere especial" });
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
     }
 
     const usuarioExistente = await usuariosRepository.findByEmail(email);
@@ -72,13 +71,14 @@ async function create(req, res, next) {
     const senhaHasheada = await bcrypt.hash(senha, 10);
     const novoUsuario = await usuariosRepository.create({ nome, email, senha: senhaHasheada });
 
-    return res.status(201).json(novoUsuario);
+    const { senha: _, ...usuarioSemSenha } = novoUsuario;
+
+    return res.status(201).json(usuarioSemSenha);
 
   } catch (error) {
     next(error);
   }
 }
-
 async function logout(req, res){
 
   res.status(204).send();

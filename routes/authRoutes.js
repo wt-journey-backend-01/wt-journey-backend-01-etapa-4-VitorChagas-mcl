@@ -8,9 +8,9 @@ router.get('/', authMiddleware, authController.findAll);
 router.get('/:id', authMiddleware, authController.findById);
 router.post('/', authMiddleware, authController.findByEmail);
 
-router.post('/login', authMiddleware, authController.login);
-router.post('/register', authMiddleware, authController.create);
-router.post('/logout', authMiddleware, authController.logout);
-router.get('/logout', authMiddleware, authController.logout);
+router.post('/login', authController.login);
+router.post('/register', authController.create);
+router.post('/logout', authController.logout);
+router.get('/logout', authController.logout);
 
 module.exports = router;

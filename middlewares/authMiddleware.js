@@ -11,13 +11,15 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ mensagem: "Token necessário" });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    const secret = process.env.JWT_SECRET || "chave_secreta";
+
+    jwt.verify(token, secret, (err, user) => {
     if (err) {
-      return res.status(401).json({ mensagem: "Token inválido" });
+        return res.status(401).json({ mensagem: "Token inválido" });
     }
     req.user = user;
     next();
-  });
+    });
 }
 
 module.exports = authMiddleware;
