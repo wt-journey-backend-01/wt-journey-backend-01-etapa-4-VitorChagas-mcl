@@ -46,10 +46,9 @@ module.exports = {
   },
 
   async findById(req, res) {
-    const id = req.params.id;
-    const agente = await agentesRepository.findById(id);
-    if (!agente) {
-      return res.status(404).json({ message: 'Agente não encontrado' });
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(404).json({ message: "ID inválido" });
     }
     agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
     res.json(agente);

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const agentesController = require('../controllers/agentesController');
+const authMiddleware = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -12,7 +13,7 @@ const agentesController = require('../controllers/agentesController');
  *          200:
  *              description: Lista de agentes
  */
-router.get('/', agentesController.findAll);
+router.get('/', authMiddleware, agentesController.findAll);
 /**
  * @swagger
  * /agentes/{id}:
@@ -30,7 +31,7 @@ router.get('/', agentesController.findAll);
  *              description: Agente buscado por id com sucesso
  *          
  */
-router.get('/:id', agentesController.findById);
+router.get('/:id', authMiddleware, agentesController.findById);
 /**
  * @swagger
  * /agentes:
@@ -57,7 +58,7 @@ router.get('/:id', agentesController.findById);
  *           description: Agente registrado com sucesso
  *
  */
-router.post('/', agentesController.create);
+router.post('/', authMiddleware, agentesController.create);
 /**
  * @swagger
  * /agentes/{id}:
@@ -90,7 +91,7 @@ router.post('/', agentesController.create);
  *           description: Agente atualizado com sucesso
  *
  */
-router.put('/:id', agentesController.update);
+router.put('/:id', authMiddleware, agentesController.update);
 /**
  * @swagger
  * /agentes/{id}:
@@ -123,7 +124,7 @@ router.put('/:id', agentesController.update);
  *           description: Agente atualizado parcialmente com sucesso
  *
  */
-router.patch('/:id', agentesController.partialUpdate);
+router.patch('/:id', authMiddleware, agentesController.partialUpdate);
 /**
  * @swagger
  * /agentes/{id}:
@@ -141,6 +142,6 @@ router.patch('/:id', agentesController.partialUpdate);
  *           description: Agentes Deletado com sucesso
  *
  */
-router.delete('/:id', agentesController.deleteById);
+router.delete('/:id', authMiddleware, agentesController.deleteById);
 
 module.exports = router;

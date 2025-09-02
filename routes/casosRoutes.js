@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const casosController = require("../controllers/casosController");
+const authMiddleware = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -13,7 +14,7 @@ const casosController = require("../controllers/casosController");
  *              description: Lista de casos
  *
  */
-router.get("/", casosController.findAll);
+router.get("/", authMiddleware, casosController.findAll);
 /**
  * @swagger
  * /casos/{id}:
@@ -30,7 +31,7 @@ router.get("/", casosController.findAll);
  *          200:
  *              description: Caso buscado por id com sucesso
  */
-router.get("/:id", casosController.findById);
+router.get("/:id", authMiddleware, casosController.findById);
 /**
  * @swagger
  * /casos:
@@ -59,7 +60,7 @@ router.get("/:id", casosController.findById);
  *           description: Caso registrado com sucesso
  *
  */
-router.post("/", casosController.create);
+router.post("/", authMiddleware, casosController.create);
 /**
  * @swagger
  * /casos/{id}:
@@ -94,7 +95,7 @@ router.post("/", casosController.create);
  *           description: Casos atualizado com sucesso
  *
  */
-router.put("/:id", casosController.update);
+router.put("/:id", authMiddleware, casosController.update);
 /**
  * @swagger
  * /casos/{id}:
@@ -129,7 +130,7 @@ router.put("/:id", casosController.update);
  *           description: Caso atualizado parcialmente com sucesso
  *
  */
-router.patch("/:id", casosController.partialUpdate);
+router.patch("/:id", authMiddleware, casosController.partialUpdate);
 /**
  * @swagger
  * /casos/{id}:
@@ -147,6 +148,6 @@ router.patch("/:id", casosController.partialUpdate);
  *           description: Casos Deletado com sucesso
  *
  */
-router.delete("/:id", casosController.deleteById);
+router.delete("/:id", authMiddleware, casosController.deleteById);
 
 module.exports = router;
