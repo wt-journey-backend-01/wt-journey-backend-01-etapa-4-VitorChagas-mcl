@@ -17,17 +17,14 @@ exports.up = async function(knex) {
     table.enu('status', ['aberto', 'solucionado']).notNullable();
     table.integer('agente_id').unsigned().references('id').inTable('agentes').onDelete('CASCADE');
   });
-};
 
-exports.up = function(knex) {
-  return knex.schema.createTable('usuarios', table => {
+  await knex.schema.createTable('usuarios', table => {
     table.increments('id').primary();
     table.string('nome').notNullable();
     table.string('email').notNullable().unique();
     table.string('senha').notNullable();
   });
 };
-
 /**
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
@@ -35,6 +32,6 @@ exports.up = function(knex) {
 exports.down = async function(knex) {
   await knex.schema.dropTableIfExists('casos');
   await knex.schema.dropTableIfExists('agentes');
-  return knex.schema.dropTableIfExists('usuarios');
+  await knex.schema.dropTableIfExists('usuarios');
 };
 
