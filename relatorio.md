@@ -1,38 +1,43 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 2 créditos restantes para usar o sistema de feedback AI.
+Você tem 1 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para VitorChagas-mcl:
 
-Nota final: **88.3/100**
+Nota final: **95.6/100**
 
-Olá, VitorChagas-mcl! 🚀 Que jornada incrível você fez até aqui! Parabéns pela dedicação e pelos acertos que você já conquistou. Vamos juntos destrinchar seu projeto para que ele fique ainda mais sólido, seguro e alinhado com as expectativas. 💪✨
-
----
-
-## 🎉 Primeiramente, os pontos fortes que você mandou muito bem!
-
-- Seu sistema de **usuários** está funcionando muito bem: criação, login com JWT, logout e exclusão de usuários passaram nos testes base! Isso mostra que sua implementação de autenticação, hashing de senha com bcrypt e geração do token JWT está correta e segura. 👏
-- A proteção das rotas com middleware JWT está presente, e você aplicou corretamente o middleware nas rotas de agentes e casos, garantindo segurança.
-- Você implementou filtros, ordenações e validações detalhadas, o que é ótimo para a usabilidade da API.
-- Conseguiu implementar endpoints bônus como `/usuarios/me` e filtros de casos e agentes, o que mostra um bom domínio do tema.
-- A estrutura do seu projeto está muito próxima do esperado, com pastas bem organizadas e arquivos no lugar certo.
+Olá, VitorChagas-mcl! 🚀 Que jornada incrível você tem trilhado até aqui! Parabéns pelo seu empenho e pela nota alta de 95.6/100 — isso mostra que seu esforço e dedicação estão dando frutos! 🎉
 
 ---
 
-## 🕵️‍♂️ Agora, vamos analisar os testes que falharam e entender o que pode estar acontecendo para você corrigir e destravar 100%!
+### 🎉 Pontos Fortes e Conquistas Bônus
 
-### Testes que falharam (base) e suas análises:
+- Você implementou muito bem a autenticação via JWT, incluindo o registro, login, logout e exclusão de usuários, com validações robustas de senha, tratamento de erros e uso correto do bcrypt para hashing. Isso é fundamental para a segurança da aplicação e você mandou muito bem! 👏
+- O uso do middleware de autenticação para proteger rotas sensíveis está correto e consistente, garantindo que somente usuários autenticados acessem agentes e casos.
+- Sua documentação no **INSTRUCTIONS.md** está detalhada, clara e cobre muito bem o fluxo de autenticação, além de exemplos úteis para o uso do token JWT.
+- Você também implementou as operações de CRUD para agentes e casos com validações cuidadosas e tratamento de erros.
+- Os testes bônus que você passou mostram que você foi além: implementou filtragem complexa, busca por agente responsável, e retornou os dados do usuário autenticado com `/usuarios/me`. Isso é um diferencial e merece ser celebrado! 🌟
 
 ---
 
-### 1. **AGENTS: Cria agentes corretamente com status code 201 e os dados inalterados do agente mais seu ID**
+### 🚨 Testes que Falharam e Análise Detalhada
 
-- **Possível causa:** No seu `agentesController.js`, no método `create`, você está validando os dados e criando o agente, mas não está tratando o retorno exatamente como esperado pelo teste.
+Você teve falhas em três testes base importantes:
 
-- **Detalhe importante:** O teste espera que o retorno do agente criado contenha exatamente os dados enviados, mais o ID gerado, e que o status code seja 201.
+1. **'AGENTS: Cria agentes corretamente com status code 201 e os dados inalterados do agente mais seu ID'**
+2. **'AGENTS: Recebe status code 400 ao tentar atualizar agente parcialmente com método PATCH e payload em formato incorreto'**
+3. **'CASES: Recebe status code 404 ao tentar buscar um caso por ID inválido'**
 
-- **Seu código atual:**
+Vamos destrinchar cada um para entender o que está acontecendo e como corrigir.
+
+---
+
+### 1. Falha: Criação de agentes com status 201 e dados inalterados
+
+**Problema identificado:**  
+Seu controller `agentesController.create` está validando corretamente os campos, mas o retorno não está exatamente no formato esperado pelo teste.
+
+No seu código:
 
 ```js
 const agenteCriado = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
@@ -40,114 +45,68 @@ agenteCriado.dataDeIncorporacao = formatDate(agenteCriado.dataDeIncorporacao);
 return res.status(201).json(agenteCriado);
 ```
 
-- **Análise:** Aqui você está formatando a data para o formato ISO string simplificado, o que é correto. Porém, o teste pode estar esperando a data no formato original, ou algum detalhe no formato pode estar diferente (ex: timezone). Além disso, certifique-se que o objeto retornado tem exatamente as propriedades esperadas (sem propriedades extras).
+O problema pode estar no fato de que você está modificando o campo `dataDeIncorporacao` após receber o objeto do banco, o que é correto, mas o teste pode estar esperando que o formato da data seja exatamente o que foi enviado, ou que o objeto retornado não tenha alterações inesperadas.
 
-- **Sugestão:** Verifique se o formato da data está exatamente como esperado e se o objeto não tem propriedades extras. Você pode fazer um `console.log(agenteCriado)` para conferir.
+**Possível causa raiz:**  
+- O teste espera os dados "inalterados" do agente, junto com o ID gerado. Como você está formatando a data para ISO string, isso pode estar causando uma pequena diferença no formato esperado.
+- Além disso, vale garantir que o objeto retornado contenha somente os campos esperados, sem propriedades extras ou faltantes.
+
+**Sugestão de melhoria:**  
+Você pode criar um novo objeto para enviar na resposta, mantendo os dados originais e formatando a data, assim evita alterar o objeto original:
+
+```js
+const agenteCriado = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
+
+const agenteResponse = {
+  id: agenteCriado.id,
+  nome: agenteCriado.nome,
+  cargo: agenteCriado.cargo,
+  dataDeIncorporacao: formatDate(agenteCriado.dataDeIncorporacao),
+};
+
+return res.status(201).json(agenteResponse);
+```
+
+Isso garante que o formato e os campos são exatamente o que o teste espera.
 
 ---
 
-### 2. **AGENTS: Busca agente por ID corretamente com status code 200 e todos os dados do agente listados dentro de um objeto JSON**
+### 2. Falha: Status 400 ao atualizar parcialmente agente com PATCH e payload incorreto
 
-- **Problema crítico encontrado no seu código:**
+**Problema identificado:**  
+No método `partialUpdate` do `agentesController`, você valida o payload para garantir que pelo menos um campo seja enviado e que os campos estejam no formato correto.
 
-No método `findById` do `agentesController.js`, você tem:
+No entanto, o teste falha ao enviar um payload incorreto e espera um status 400, o que você já faz, mas o teste pode estar esperando uma mensagem de erro específica ou um formato de resposta diferente.
+
+Outro ponto importante é que o seu middleware `authMiddleware` retorna mensagens de erro com a chave `mensagem` no JSON, mas no controller você usa `message` ou `message` em inglês em algumas respostas. Essa inconsistência pode confundir os testes.
+
+Além disso, o teste pode estar verificando se o retorno de erro inclui a propriedade `errors` com detalhes dos campos inválidos, e no seu código você retorna assim:
 
 ```js
-async findById(req, res) {
-  const agente = await agentesRepository.findById(id);
-  if (!agente) {
-    return res.status(404).json({ message: "Agente não encontrado" });
-  }
-  const id = Number(req.params.id);
-  if (isNaN(id) || id <= 0) {
-    return res.status(404).json({ message: "ID inválido" });
-  }
-  agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
-  res.json(agente);
+return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+```
+
+Isso está correto, mas vale revisar se o teste espera a chave `message` ou `mensagem` e se o conteúdo da mensagem está exatamente igual.
+
+**Sugestão de melhoria:**  
+Padronize as mensagens de erro para o português e use sempre `message` ou `mensagem` conforme o padrão do seu projeto, e garanta que o objeto `errors` esteja presente.
+
+Exemplo:
+
+```js
+if (errors.length > 0) {
+  return res.status(400).json({ status: 400, mensagem: "Parâmetros inválidos", errors });
 }
 ```
 
-- **O que está errado aqui?**
-
-Você está usando a variável `id` antes de defini-la! Ou seja, `id` está indefinida na linha:
-
-```js
-const agente = await agentesRepository.findById(id);
-```
-
-porque `id` só é definido depois, em:
-
-```js
-const id = Number(req.params.id);
-```
-
-Isso gera erro e faz com que o agente nunca seja buscado corretamente.
-
-- **Como corrigir?**
-
-Troque a ordem para:
-
-```js
-async findById(req, res) {
-  const id = Number(req.params.id);
-  if (isNaN(id) || id <= 0) {
-    return res.status(404).json({ message: "ID inválido" });
-  }
-  const agente = await agentesRepository.findById(id);
-  if (!agente) {
-    return res.status(404).json({ message: "Agente não encontrado" });
-  }
-  agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
-  res.json(agente);
-}
-```
-
-Esse pequeno detalhe está causando falha em vários testes relacionados a buscar agentes por ID e validar o ID.
+Além disso, verifique se o payload enviado no PATCH está sendo validado corretamente, e se você está tratando o caso de payload vazio com a mensagem esperada pelo teste.
 
 ---
 
-### 3. **AGENTS: Recebe status 404 ao tentar buscar um agente inexistente**
+### 3. Falha: Buscar caso por ID inválido retorna status 404
 
-- Provavelmente está relacionado ao problema do item 2, pois se o ID está indefinido, a busca não funciona corretamente.
-
----
-
-### 4. **AGENTS: Recebe status 404 ao tentar buscar um agente com ID em formato inválido**
-
-- Também relacionado ao problema de validar o ID antes da busca (item 2).
-
----
-
-### 5. **AGENTS: Recebe status code 400 ao tentar atualizar agente parcialmente com método PATCH e payload em formato incorreto**
-
-- Seu método `partialUpdate` no `agentesController.js` parece estar bem estruturado para validar os dados.
-
-- Porém, o teste falha se o payload enviado não está sendo validado corretamente.
-
-- **Sugestão:** Verifique se o middleware de validação está sendo aplicado corretamente e se o código rejeita payloads vazios ou com campos inválidos.
-
-- Também verifique se o código está validando o ID antes de buscar o agente (igual ao problema do findById).
-
----
-
-### 6. **CASES: Recebe status code 404 ao tentar buscar um caso por ID inválido**
-
-- No `casosController.js`, no método `findById`, você tem:
-
-```js
-const id = req.params.id;
-const casos = await casosRepository.findById(id);
-if (!casos) {
-  return res.status(404).json({error: "Caso não encontrado" });
-}
-res.json(casos);
-```
-
-- **Análise:**
-
-Aqui falta validar se o `id` é um número válido (positivo e inteiro). Se o ID for inválido (ex: string não numérica), a busca pode falhar silenciosamente e retornar 404.
-
-- **Sugestão:** Antes de buscar, faça:
+**Problema identificado:**  
+No seu `casosController.findById`, você faz a validação do ID assim:
 
 ```js
 const id = Number(req.params.id);
@@ -156,76 +115,101 @@ if (isNaN(id) || id <= 0) {
 }
 ```
 
-Assim você garante que o ID é válido antes da busca.
+Isso está correto, mas o teste pode estar esperando a chave da mensagem em português com a palavra `mensagem` em vez de `message`. Além disso, a mensagem deve ser exatamente a que o teste espera.
+
+**Sugestão de melhoria:**  
+Padronize as mensagens de erro para usar `mensagem` e mantenha o texto conforme o esperado.
+
+Exemplo:
+
+```js
+if (isNaN(id) || id <= 0) {
+  return res.status(404).json({ mensagem: "ID inválido" });
+}
+```
+
+Também vale garantir que o seu middleware de autenticação está funcionando corretamente para proteger a rota, pois se o teste não enviar o token, ele pode falhar.
 
 ---
 
-### 7. **CASES: Recebe status code 404 ao tentar atualizar um caso por completo com método PUT de um caso com ID inválido**
+### 📂 Sobre a Estrutura de Diretórios
 
-- Mesmo problema do item 6: falta validar o ID antes de tentar atualizar.
+Sua estrutura está muito bem organizada e segue exatamente o padrão exigido:
 
----
+```
+📦 SEU-REPOSITÓRIO
+│
+├── package.json
+├── server.js
+├── .env
+├── knexfile.js
+├── INSTRUCTIONS.md
+│
+├── db/
+│ ├── migrations/
+│ ├── seeds/
+│ └── db.js
+│
+├── routes/
+│ ├── agentesRoutes.js
+│ ├── casosRoutes.js
+│ └── authRoutes.js
+│
+├── controllers/
+│ ├── agentesController.js
+│ ├── casosController.js
+│ └── authController.js
+│
+├── repositories/
+│ ├── agentesRepository.js
+│ ├── casosRepository.js
+│ └── usuariosRepository.js
+│
+├── middlewares/
+│ └── authMiddleware.js
+│
+├── utils/
+│ └── errorHandler.js
+```
 
-### 8. **CASES: Recebe status code 404 ao tentar atualizar um caso parcialmente com método PATCH de um caso com ID inválido**
-
-- Idem aos itens 6 e 7.
-
----
-
-## ⚠️ Pontos de atenção importantes para corrigir:
-
-- A validação do ID (`req.params.id`) deve ser feita **antes** de qualquer operação de busca ou atualização para evitar erros e garantir respostas coerentes.
-- No `agentesController.js` e `casosController.js`, revise todos os métodos que usam `req.params.id` para garantir essa validação.
-- No `agentesController.js`, o erro de usar a variável `id` antes de defini-la no `findById` é um problema crítico que impacta vários testes.
-- No seu middleware `authMiddleware.js`, tudo parece correto, mas a mensagem de erro retornada em caso de token inválido é sempre `"Token Necessario"`, o que pode confundir. Você poderia diferenciar as mensagens entre token ausente e token inválido para maior clareza.
-
----
-
-## 🧰 Sobre a Estrutura do Projeto
-
-Sua estrutura está muito boa e segue o esperado! Você tem as pastas:
-
-- `controllers/`
-- `repositories/`
-- `routes/`
-- `middlewares/`
-- `db/` com migrations e seeds
-- `utils/` com errorHandler.js
-
-Isso é fundamental para manter o código organizado e escalável. Continue assim!
-
----
-
-## 💡 Recomendações de aprendizado para você
-
-Para ajudar a corrigir e entender melhor os pontos citados, recomendo fortemente os seguintes vídeos, feitos pelos meus criadores, que explicam muito bem os conceitos que você está trabalhando:
-
-- Para entender melhor a autenticação JWT e segurança: https://www.youtube.com/watch?v=Q4LQOfYwujk  
-- Para aprofundar no uso de JWT na prática: https://www.youtube.com/watch?v=keS0JWOypIU  
-- Para dominar bcrypt e JWT juntos, veja este vídeo: https://www.youtube.com/watch?v=L04Ln97AwoY  
-- Para melhorar seu entendimento sobre queries e migrations com Knex.js, que são essenciais para manipular seu banco:  
-  - Migrations: https://www.youtube.com/watch?v=dXWy_aGCW1E  
-  - Query Builder: https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s  
-- Para organizar melhor seu projeto e aplicar arquitetura MVC: https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s  
+Parabéns por manter a organização! Isso facilita muito a manutenção e escalabilidade do projeto. 👍
 
 ---
 
-## 📝 Resumo dos principais pontos para focar na próxima rodada:
+### 💡 Recomendações de Aprendizado para Você
 
-- Corrija a ordem da definição da variável `id` no método `findById` do `agentesController.js` para evitar usar variável indefinida.
-- Valide o ID (número positivo e inteiro) **antes** de realizar buscas, atualizações e exclusões em agentes e casos.
-- Ajuste as mensagens de erro no middleware de autenticação para diferenciar token ausente de token inválido (opcional, mas recomendado).
-- Verifique o formato da data retornada no `create` do agente para garantir que está conforme esperado pelo teste.
-- Garanta que o payload enviado em PATCH para agentes está sendo validado corretamente e retorna 400 em caso de dados inválidos.
-- Continue mantendo a organização do projeto, pois está muito boa!
+Para ajudar a corrigir e aprimorar ainda mais seu código, recomendo fortemente os seguintes vídeos:
+
+- Para entender profundamente a autenticação e segurança com JWT e bcrypt, veja este vídeo feito pelos meus criadores que explica muito bem os conceitos básicos de cibersegurança:  
+  https://www.youtube.com/watch?v=Q4LQOfYwujk
+
+- Para se aprofundar no uso prático de JWT, incluindo geração e verificação de tokens:  
+  https://www.youtube.com/watch?v=keS0JWOypIU
+
+- Para entender melhor o uso do bcrypt junto com JWT e como proteger rotas em Node.js:  
+  https://www.youtube.com/watch?v=L04Ln97AwoY
+
+- Caso queira revisar como organizar seu projeto com arquitetura MVC em Node.js, este vídeo é excelente:  
+  https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
 
 ---
 
-Vitor, você está muito próximo da perfeição! Pequenos ajustes como esses vão destravar os testes que faltam e deixar seu projeto robusto e profissional. Continue firme, você está fazendo um excelente trabalho! 💪🔥
+### 📝 Resumo dos Pontos para Focar e Melhorar
 
-Se precisar de ajuda para entender qualquer ponto, não hesite em perguntar! Estou aqui para te ajudar a crescer.
+- **Padronize as mensagens de erro** entre `mensagem` e `message` para evitar falhas nos testes que esperam campos específicos. Prefira usar `mensagem` em português para manter a consistência com o restante da API.
+- **No retorno da criação de agentes**, garanta que o objeto JSON enviado contenha apenas os campos esperados e que a data esteja no formato correto, evitando alterar diretamente o objeto retornado do banco.
+- **No PATCH para agentes,** valide cuidadosamente o payload e retorne erros com o formato esperado, incluindo a propriedade `errors` com detalhes.
+- **No tratamento de IDs inválidos,** use mensagens padronizadas e consistentes para o retorno 404.
+- **Revise os middlewares de autenticação** para garantir que rotas protegidas estejam corretamente bloqueando acessos não autorizados.
+- Continue mantendo a estrutura do projeto organizada, isso é fundamental!
 
-Um grande abraço e até a próxima revisão! 🚀👊
+---
+
+Vitor, você está muito perto da perfeição! Seu código está bem estruturado, seguro e funcional. Com esses pequenos ajustes, seus testes base vão passar com louvor e você terá uma API robusta e profissional. Continue firme, aprendendo e evoluindo! 🚀💪
+
+Se precisar de mais ajuda, estou aqui para te apoiar nessa jornada. Vamos juntos! 😉
+
+Um abraço e sucesso! 👊✨
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
