@@ -78,14 +78,14 @@ module.exports = {
 
     const agenteCriado = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
 
-    const agenteResponse = {
+    const agentesRepository = {
       id: agenteCriado.id,
       nome: agenteCriado.nome,
       cargo: agenteCriado.cargo,
       dataDeIncorporacao: formatDate(agenteCriado.dataDeIncorporacao),
     };
 
-    return res.status(201).json(agenteResponse);
+    return res.status(201).json(agenteCriado);
   },
 
   async update(req, res) {
@@ -122,11 +122,8 @@ module.exports = {
   async partialUpdate(req, res) {
     const dadosAtualizados = { ...req.body };
 
-    if (Object.keys(dadosAtualizados).length === 0) {
-      return res.status(400).json({
-        status: 400,
-        mensagem: "Nenhum dado para atualizar foi fornecido."
-      });
+    if (typeof req.body !== 'object' || Array.isArray(req.body) || req.body === null) {
+      return res.status(400).json({ mensagem: "Payload inválido, deve ser um objeto JSON" });
     }
 
     const id = Number(req.params.id);

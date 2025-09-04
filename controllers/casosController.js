@@ -30,13 +30,11 @@ module.exports = {
     if (isNaN(id) || id <= 0) {
       return res.status(404).json({ mensagem: "ID inválido" });
     }
-    const casos = await casosRepository.findById(id);
-    if (!casos) {
-      return res
-        .status(404)
-        .json({error: "Caso não encontrado" });
+    const caso = await casosRepository.findById(id);
+    if (!caso) {
+      return res.status(404).json({ mensagem: "Caso não encontrado" });
     }
-    res.json(casos);
+    res.json(caso);
   },
 
   async create(req, res) {
