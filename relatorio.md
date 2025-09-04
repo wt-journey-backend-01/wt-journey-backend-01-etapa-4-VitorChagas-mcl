@@ -1,281 +1,231 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 3 créditos restantes para usar o sistema de feedback AI.
+Você tem 2 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para VitorChagas-mcl:
 
 Nota final: **88.3/100**
 
-Olá, VitorChagas-mcl! 👋🚀
-
-Antes de tudo, parabéns pelo seu empenho e pelo trabalho que você entregou até aqui! 🎉 Você conseguiu implementar com sucesso a criação e autenticação de usuários, logout, exclusão e até a geração de JWT com expiração válida — isso é fundamental e você mandou muito bem! Também aplicou corretamente o middleware de autenticação nas rotas protegidas e estruturou seu projeto quase que perfeitamente conforme o esperado. Isso é motivo para celebrar! 🎊
-
-Além disso, você avançou bastante nos bônus, como o endpoint `/usuarios/me` e a filtragem e ordenação dos agentes e casos, o que mostra seu comprometimento em ir além do básico. 👏
+Olá, VitorChagas-mcl! 🚀 Que jornada incrível você fez até aqui! Parabéns pela dedicação e pelos acertos que você já conquistou. Vamos juntos destrinchar seu projeto para que ele fique ainda mais sólido, seguro e alinhado com as expectativas. 💪✨
 
 ---
 
-### Agora, vamos falar sobre os testes que falharam e entender juntos os porquês para você destravar 100% do seu projeto! 🕵️‍♂️🔍
+## 🎉 Primeiramente, os pontos fortes que você mandou muito bem!
+
+- Seu sistema de **usuários** está funcionando muito bem: criação, login com JWT, logout e exclusão de usuários passaram nos testes base! Isso mostra que sua implementação de autenticação, hashing de senha com bcrypt e geração do token JWT está correta e segura. 👏
+- A proteção das rotas com middleware JWT está presente, e você aplicou corretamente o middleware nas rotas de agentes e casos, garantindo segurança.
+- Você implementou filtros, ordenações e validações detalhadas, o que é ótimo para a usabilidade da API.
+- Conseguiu implementar endpoints bônus como `/usuarios/me` e filtros de casos e agentes, o que mostra um bom domínio do tema.
+- A estrutura do seu projeto está muito próxima do esperado, com pastas bem organizadas e arquivos no lugar certo.
 
 ---
 
-## Testes que falharam e análise detalhada
+## 🕵️‍♂️ Agora, vamos analisar os testes que falharam e entender o que pode estar acontecendo para você corrigir e destravar 100%!
+
+### Testes que falharam (base) e suas análises:
+
+---
 
 ### 1. **AGENTS: Cria agentes corretamente com status code 201 e os dados inalterados do agente mais seu ID**
 
-- **O que acontece?**  
-  Esse teste exige que ao criar um agente, o retorno contenha todos os dados enviados, inalterados, mais o ID gerado, e que o status seja 201.
+- **Possível causa:** No seu `agentesController.js`, no método `create`, você está validando os dados e criando o agente, mas não está tratando o retorno exatamente como esperado pelo teste.
 
-- **Análise no seu código:**  
-  No seu `agentesController.js`, a função `create` está retornando o agente criado, mas você está formatando a data `dataDeIncorporacao` para o formato ISO (YYYY-MM-DD) usando `formatDate`. Isso pode alterar a data original enviada, e o teste espera os dados exatamente como foram inseridos.
+- **Detalhe importante:** O teste espera que o retorno do agente criado contenha exatamente os dados enviados, mais o ID gerado, e que o status code seja 201.
 
-  Além disso, percebi que você não está validando se o ID é numérico ou válido na criação (mas isso é menos crítico aqui).
+- **Seu código atual:**
 
-- **Trecho relevante:**
+```js
+const agenteCriado = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
+agenteCriado.dataDeIncorporacao = formatDate(agenteCriado.dataDeIncorporacao);
+return res.status(201).json(agenteCriado);
+```
 
-  ```js
-  const agenteCriado = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
-  agenteCriado.dataDeIncorporacao = formatDate(agenteCriado.dataDeIncorporacao);
-  return res.status(201).json(agenteCriado);
-  ```
+- **Análise:** Aqui você está formatando a data para o formato ISO string simplificado, o que é correto. Porém, o teste pode estar esperando a data no formato original, ou algum detalhe no formato pode estar diferente (ex: timezone). Além disso, certifique-se que o objeto retornado tem exatamente as propriedades esperadas (sem propriedades extras).
 
-- **Por que pode falhar?**  
-  O teste espera os dados exatamente como foram enviados, e a transformação da data pode fazer com que o objeto retornado não seja idêntico ao esperado.
-
-- **Sugestão:**  
-  Para passar neste teste, retorne o objeto exatamente como o banco retornou, sem modificar os campos. Se precisar formatar datas para exibição, faça isso apenas nas rotas de listagem, não no retorno da criação.
+- **Sugestão:** Verifique se o formato da data está exatamente como esperado e se o objeto não tem propriedades extras. Você pode fazer um `console.log(agenteCriado)` para conferir.
 
 ---
 
-### 2. **AGENTS: Recebe status 404 ao tentar buscar um agente com ID em formato inválido**
+### 2. **AGENTS: Busca agente por ID corretamente com status code 200 e todos os dados do agente listados dentro de um objeto JSON**
 
-- **O que acontece?**  
-  Quando o ID passado na URL não é um número válido, o sistema deve responder com 404.
+- **Problema crítico encontrado no seu código:**
 
-- **Análise no seu código:**  
-  Na função `findById` do `agentesController.js`, você não está validando se o `id` é um número válido antes de buscar no banco.
+No método `findById` do `agentesController.js`, você tem:
 
-  ```js
-  async findById(req, res) {
-    const id = req.params.id;
-    const agente = await agentesRepository.findById(id);
-    if (!agente) {
-      return res.status(404).json({ message: "Agente não encontrado" });
-    }
-    // ...
-  }
-  ```
-
-  Se `id` for uma string inválida (ex: "abc"), o banco pode retornar null, mas o ideal é validar logo no início e já retornar 404 para o formato inválido.
-
-- **Sugestão:**  
-  Adicione uma validação para garantir que o `id` seja um número inteiro positivo. Exemplo:
-
-  ```js
-  const id = Number(req.params.id);
-  if (isNaN(id) || id <= 0) {
-    return res.status(404).json({ message: "ID inválido" });
-  }
-  ```
-
-  Isso evita consultas desnecessárias ao banco e deixa a API mais robusta.
-
----
-
-### 3. **AGENTS: Recebe status code 404 ao tentar atualizar agente por completo com método PUT de agente de ID em formato incorreto**
-
-- **O que acontece?**  
-  Ao tentar atualizar um agente com um ID inválido (não numérico ou negativo), o sistema deve retornar 404.
-
-- **Análise no seu código:**  
-  Na função `update` do `agentesController.js`, não há validação do ID para verificar se é válido antes de tentar atualizar.
-
-- **Sugestão:**  
-  Faça a mesma validação de ID numérico e positivo no início da função `update`, assim:
-
-  ```js
-  const id = Number(req.params.id);
-  if (isNaN(id) || id <= 0) {
-    return res.status(404).json({ message: "ID inválido" });
-  }
-  ```
-
----
-
-### 4. **AGENTS: Recebe status code 400 ao tentar atualizar agente parcialmente com método PATCH e payload em formato incorreto**
-
-- **O que acontece?**  
-  Se o payload enviado no PATCH estiver vazio ou com dados inválidos, o sistema deve retornar 400.
-
-- **Análise do código:**  
-  Você tem validações na função `partialUpdate` para checar se o payload está vazio e se os campos são strings não vazias, o que é ótimo. Porém, o teste pode estar falhando porque você não está validando o tipo do ID, ou há algum detalhe na validação do payload.
-
-- **Possível causa:**  
-  No método `partialUpdate` você tem:
-
-  ```js
-  if (Object.keys(dadosAtualizados).length === 0) {
-    return res.status(400).json({
-      status: 400,
-      message: "Nenhum dado para atualizar foi fornecido."
-    });
-  }
-  ```
-
-  Isso está correto. Verifique se o ID está sendo validado para formato correto (número positivo). Se não estiver, o teste espera 404, mas pode estar retornando 400 ou outro código.
-
-- **Sugestão:**  
-  Adicione validação do ID no início do método `partialUpdate`:
-
-  ```js
-  const id = Number(req.params.id);
-  if (isNaN(id) || id <= 0) {
-    return res.status(404).json({ message: "ID inválido" });
-  }
-  ```
-
----
-
-### 5. **AGENTS: Recebe status code 404 ao tentar deletar agente inexistente**
-
-- **O que acontece?**  
-  Ao tentar deletar um agente que não existe, o sistema deve responder com 404.
-
-- **Análise do código:**  
-  No seu `agentesController.js`, na função `deleteById`, você só valida se o ID é válido, mas não verifica se o agente existe antes de enviar status 204.
-
-  ```js
-  async deleteById(req, res) {
-    const id = Number(req.params.id);
-    if (isNaN(id) || id <= 0) {
-      return res.status(404).json({ message: "ID inválido" });
-    }
-    res.status(204).send();
-  }
-  ```
-
-  Aqui está o problema: você não está realmente deletando o agente nem verificando se ele existia.
-
-- **Sugestão:**  
-  Você deve chamar o repositório para deletar o agente e verificar o resultado. Se nada for deletado, retorne 404:
-
-  ```js
-  const deletado = await agentesRepository.deleteById(id);
-  if (!deletado) {
+```js
+async findById(req, res) {
+  const agente = await agentesRepository.findById(id);
+  if (!agente) {
     return res.status(404).json({ message: "Agente não encontrado" });
   }
-  return res.status(204).send();
-  ```
+  const id = Number(req.params.id);
+  if (isNaN(id) || id <= 0) {
+    return res.status(404).json({ message: "ID inválido" });
+  }
+  agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
+  res.json(agente);
+}
+```
+
+- **O que está errado aqui?**
+
+Você está usando a variável `id` antes de defini-la! Ou seja, `id` está indefinida na linha:
+
+```js
+const agente = await agentesRepository.findById(id);
+```
+
+porque `id` só é definido depois, em:
+
+```js
+const id = Number(req.params.id);
+```
+
+Isso gera erro e faz com que o agente nunca seja buscado corretamente.
+
+- **Como corrigir?**
+
+Troque a ordem para:
+
+```js
+async findById(req, res) {
+  const id = Number(req.params.id);
+  if (isNaN(id) || id <= 0) {
+    return res.status(404).json({ message: "ID inválido" });
+  }
+  const agente = await agentesRepository.findById(id);
+  if (!agente) {
+    return res.status(404).json({ message: "Agente não encontrado" });
+  }
+  agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
+  res.json(agente);
+}
+```
+
+Esse pequeno detalhe está causando falha em vários testes relacionados a buscar agentes por ID e validar o ID.
+
+---
+
+### 3. **AGENTS: Recebe status 404 ao tentar buscar um agente inexistente**
+
+- Provavelmente está relacionado ao problema do item 2, pois se o ID está indefinido, a busca não funciona corretamente.
+
+---
+
+### 4. **AGENTS: Recebe status 404 ao tentar buscar um agente com ID em formato inválido**
+
+- Também relacionado ao problema de validar o ID antes da busca (item 2).
+
+---
+
+### 5. **AGENTS: Recebe status code 400 ao tentar atualizar agente parcialmente com método PATCH e payload em formato incorreto**
+
+- Seu método `partialUpdate` no `agentesController.js` parece estar bem estruturado para validar os dados.
+
+- Porém, o teste falha se o payload enviado não está sendo validado corretamente.
+
+- **Sugestão:** Verifique se o middleware de validação está sendo aplicado corretamente e se o código rejeita payloads vazios ou com campos inválidos.
+
+- Também verifique se o código está validando o ID antes de buscar o agente (igual ao problema do findById).
 
 ---
 
 ### 6. **CASES: Recebe status code 404 ao tentar buscar um caso por ID inválido**
 
-- **Análise:**  
-  Igual aos agentes, você não está validando o ID para ser numérico e positivo no `casosController.js` na função `findById`.
+- No `casosController.js`, no método `findById`, você tem:
 
-- **Sugestão:**  
-  Adicione validação no início da função:
+```js
+const id = req.params.id;
+const casos = await casosRepository.findById(id);
+if (!casos) {
+  return res.status(404).json({error: "Caso não encontrado" });
+}
+res.json(casos);
+```
 
-  ```js
-  const id = Number(req.params.id);
-  if (isNaN(id) || id <= 0) {
-    return res.status(404).json({ message: "ID inválido" });
-  }
-  ```
+- **Análise:**
+
+Aqui falta validar se o `id` é um número válido (positivo e inteiro). Se o ID for inválido (ex: string não numérica), a busca pode falhar silenciosamente e retornar 404.
+
+- **Sugestão:** Antes de buscar, faça:
+
+```js
+const id = Number(req.params.id);
+if (isNaN(id) || id <= 0) {
+  return res.status(404).json({ message: "ID inválido" });
+}
+```
+
+Assim você garante que o ID é válido antes da busca.
 
 ---
 
 ### 7. **CASES: Recebe status code 404 ao tentar atualizar um caso por completo com método PUT de um caso com ID inválido**
 
-- **Análise:**  
-  Mesma situação: falta validação do ID no `update` do `casosController.js`.
-
-- **Sugestão:**  
-  Valide o ID no início da função:
-
-  ```js
-  const id = Number(req.params.id);
-  if (isNaN(id) || id <= 0) {
-    return res.status(404).json({ message: "ID inválido" });
-  }
-  ```
+- Mesmo problema do item 6: falta validar o ID antes de tentar atualizar.
 
 ---
 
 ### 8. **CASES: Recebe status code 404 ao tentar atualizar um caso parcialmente com método PATCH de um caso com ID inválido**
 
-- **Análise:**  
-  Também falta validação do ID no método `partialUpdate` do `casosController.js`.
-
-- **Sugestão:**  
-  Adicione validação do ID no início da função:
-
-  ```js
-  const id = Number(req.params.id);
-  if (isNaN(id) || id <= 0) {
-    return res.status(404).json({ message: "ID inválido" });
-  }
-  ```
+- Idem aos itens 6 e 7.
 
 ---
 
-## Resumo dos principais pontos para você focar:
+## ⚠️ Pontos de atenção importantes para corrigir:
 
-- 🚦 **Validação do ID nos controllers:**  
-  Sempre valide que o ID recebido via URL é um número inteiro positivo antes de qualquer operação. Isso evita consultas inválidas e ajuda a retornar status 404 corretamente.
-
-- 🛠️ **Implementar a lógica de exclusão real nos deletes:**  
-  No `deleteById` dos agentes (e verifique se nos casos também está correto), faça a chamada para o repositório para deletar o registro e retorne 404 se o registro não existir.
-
-- 📅 **Evite modificar os dados retornados na criação:**  
-  Na criação de agentes, não altere campos como datas antes de retornar o objeto criado — isso pode causar falha nos testes que esperam os dados originais.
-
-- 📚 **Continue aplicando validações rigorosas nos payloads:**  
-  Você já está fazendo um ótimo trabalho aqui, continue assim!
+- A validação do ID (`req.params.id`) deve ser feita **antes** de qualquer operação de busca ou atualização para evitar erros e garantir respostas coerentes.
+- No `agentesController.js` e `casosController.js`, revise todos os métodos que usam `req.params.id` para garantir essa validação.
+- No `agentesController.js`, o erro de usar a variável `id` antes de defini-la no `findById` é um problema crítico que impacta vários testes.
+- No seu middleware `authMiddleware.js`, tudo parece correto, mas a mensagem de erro retornada em caso de token inválido é sempre `"Token Necessario"`, o que pode confundir. Você poderia diferenciar as mensagens entre token ausente e token inválido para maior clareza.
 
 ---
 
-## Pontos positivos que merecem destaque! 🌟
+## 🧰 Sobre a Estrutura do Projeto
 
-- Implementação correta da autenticação com JWT e bcrypt, incluindo a validação da senha com regex.  
-- Middleware de autenticação bem aplicado nas rotas protegidas.  
-- Estrutura do projeto organizada conforme o esperado, com controllers, repositories, middlewares e rotas bem divididos.  
-- Documentação clara no INSTRUCTIONS.md, incluindo exemplos de uso do JWT no header Authorization.  
-- Tratamento de erros consistente e mensagens claras para o usuário.  
-- Implementação dos bônus, como o endpoint `/usuarios/me` e filtros avançados para agentes e casos.
+Sua estrutura está muito boa e segue o esperado! Você tem as pastas:
 
----
+- `controllers/`
+- `repositories/`
+- `routes/`
+- `middlewares/`
+- `db/` com migrations e seeds
+- `utils/` com errorHandler.js
 
-## Recomendações de aprendizado para você aprimorar ainda mais seu projeto:
-
-- Para entender melhor a importância da validação de IDs e como fazer isso com Express.js:  
-  **[Refatoração e Boas Práticas de Código](https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s)**
-
-- Para aprofundar no uso de JWT e autenticação segura:  
-  **[Esse vídeo, feito pelos meus criadores, fala muito bem sobre autenticação com JWT e segurança](https://www.youtube.com/watch?v=Q4LQOfYwujk)**
-
-- Para dominar o Knex.js e fazer queries e operações no banco de dados corretamente:  
-  **[Guia detalhado do Knex Query Builder](https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s)**
+Isso é fundamental para manter o código organizado e escalável. Continue assim!
 
 ---
 
-## Resumo Final para você focar:
+## 💡 Recomendações de aprendizado para você
 
-- [ ] Validar IDs recebidos via URL para garantir que são números inteiros positivos antes de consultar ou alterar o banco.  
-- [ ] Implementar a exclusão real e verificar se o registro existia antes de retornar sucesso em deletes.  
-- [ ] Evitar modificar dados retornados na criação (ex: formatar datas), para não quebrar testes que esperam os dados originais.  
-- [ ] Continuar com as boas práticas de validação de payload e tratamento de erros.  
-- [ ] Revisar os controllers de agentes e casos para aplicar essas validações e correções.  
+Para ajudar a corrigir e entender melhor os pontos citados, recomendo fortemente os seguintes vídeos, feitos pelos meus criadores, que explicam muito bem os conceitos que você está trabalhando:
+
+- Para entender melhor a autenticação JWT e segurança: https://www.youtube.com/watch?v=Q4LQOfYwujk  
+- Para aprofundar no uso de JWT na prática: https://www.youtube.com/watch?v=keS0JWOypIU  
+- Para dominar bcrypt e JWT juntos, veja este vídeo: https://www.youtube.com/watch?v=L04Ln97AwoY  
+- Para melhorar seu entendimento sobre queries e migrations com Knex.js, que são essenciais para manipular seu banco:  
+  - Migrations: https://www.youtube.com/watch?v=dXWy_aGCW1E  
+  - Query Builder: https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s  
+- Para organizar melhor seu projeto e aplicar arquitetura MVC: https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s  
 
 ---
 
-Vitor, seu projeto está muito bem encaminhado, e com esses ajustes você vai garantir que sua API esteja robusta e pronta para produção! 🚀 Continue firme, pois você está no caminho certo para se tornar um mestre em Node.js e APIs seguras! 💪
+## 📝 Resumo dos principais pontos para focar na próxima rodada:
 
-Se precisar, volte a estudar os vídeos que te recomendei, eles vão te dar uma base sólida para esses pontos.
+- Corrija a ordem da definição da variável `id` no método `findById` do `agentesController.js` para evitar usar variável indefinida.
+- Valide o ID (número positivo e inteiro) **antes** de realizar buscas, atualizações e exclusões em agentes e casos.
+- Ajuste as mensagens de erro no middleware de autenticação para diferenciar token ausente de token inválido (opcional, mas recomendado).
+- Verifique o formato da data retornada no `create` do agente para garantir que está conforme esperado pelo teste.
+- Garanta que o payload enviado em PATCH para agentes está sendo validado corretamente e retorna 400 em caso de dados inválidos.
+- Continue mantendo a organização do projeto, pois está muito boa!
 
-Conte comigo para o que precisar, e parabéns pelo seu esforço até aqui! 🌟👏
+---
 
-Até a próxima! 👋😊
+Vitor, você está muito próximo da perfeição! Pequenos ajustes como esses vão destravar os testes que faltam e deixar seu projeto robusto e profissional. Continue firme, você está fazendo um excelente trabalho! 💪🔥
+
+Se precisar de ajuda para entender qualquer ponto, não hesite em perguntar! Estou aqui para te ajudar a crescer.
+
+Um grande abraço e até a próxima revisão! 🚀👊
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
