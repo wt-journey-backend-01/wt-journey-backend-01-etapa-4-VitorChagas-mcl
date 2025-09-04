@@ -46,10 +46,13 @@ module.exports = {
   },
 
   async findById(req, res) {
-    const id = req.params.id;
     const agente = await agentesRepository.findById(id);
     if (!agente) {
       return res.status(404).json({ message: "Agente não encontrado" });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+    return res.status(404).json({ message: "ID inválido" });
     }
     agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
     res.json(agente);
@@ -79,14 +82,11 @@ module.exports = {
   },
 
   async update(req, res) {
-    const id = req.params.id;
     const dadosAtualizados = req.body;
 
-    if ('id' in dadosAtualizados) {
-      return res.status(400).json({
-        status: 400,
-        message: "Não é permitido alterar o ID do agente."
-      });
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(404).json({ message: "ID inválido" });
     }
 
     const errors = [];
@@ -113,7 +113,6 @@ module.exports = {
   },
 
   async partialUpdate(req, res) {
-    const id = req.params.id;
     const dadosAtualizados = { ...req.body };
 
     if (Object.keys(dadosAtualizados).length === 0) {
@@ -123,13 +122,10 @@ module.exports = {
       });
     }
 
-    if ('id' in dadosAtualizados) {
-      return res.status(400).json({
-        status: 400,
-        message: "Não é permitido alterar o ID do agente."
-      });
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(404).json({ message: "ID inválido" });
     }
-
     const errors = [];
     if ('nome' in dadosAtualizados && 
         (typeof dadosAtualizados.nome !== 'string' || dadosAtualizados.nome.trim() === '')) {
@@ -160,6 +156,10 @@ module.exports = {
     if (isNaN(id) || id <= 0) {
       return res.status(404).json({ message: "ID inválido" });
     }
-    res.status(204).send();
+    const deletado = await agentesRepository.deleteById(id);
+    if (!deletado) {
+      return res.status(404).json({ message: "Agente não encontrado" });
+    }
+    return res.status(204).send();
   }
 };
