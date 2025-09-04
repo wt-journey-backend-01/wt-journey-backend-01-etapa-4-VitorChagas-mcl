@@ -26,7 +26,10 @@ module.exports = {
   },
 
   async findById(req, res) {
-    const id = req.params.id;
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(404).json({ message: "ID inválido" });
+    }
     const casos = await casosRepository.findById(id);
     if (!casos) {
       return res
@@ -86,7 +89,10 @@ module.exports = {
   },
 
   async update(req, res) {
-    const id = req.params.id;
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(404).json({ message: "ID inválido" });
+    }
     const dadosAtualizados = { ...req.body };
     if ("id" in req.body) {
       return res.status(400).json({
@@ -142,7 +148,10 @@ module.exports = {
   },
 
   async partialUpdate(req, res) {
-    const id = req.params.id;
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(404).json({ message: "ID inválido" });
+    }
     const dadosAtualizados = { ...req.body };
 
     if (Object.keys(dadosAtualizados).length === 0) {
@@ -234,7 +243,10 @@ module.exports = {
   },
 
   async deleteById(req, res) {
-    const id = req.params.id;
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(404).json({ message: "ID inválido" });
+    }
     const deletado = await casosRepository.deleteById(id);
     if (!deletado) {
       return res.status(404).json({ message: "Caso não encontrado" });
