@@ -76,13 +76,13 @@ module.exports = {
       return res.status(400).json({ status: 400, mensagem: "Parâmetros inválidos", errors });
     }
 
-    const agenteCriado = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
+    const agenteCreat = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
 
-    const agentesRepository = {
-      id: agenteCriado.id,
-      nome: agenteCriado.nome,
-      cargo: agenteCriado.cargo,
-      dataDeIncorporacao: formatDate(agenteCriado.dataDeIncorporacao),
+    const agenteCriado = {
+      id: agenteCreat.id,
+      nome: agenteCreat.nome,
+      cargo: agenteCreat.cargo,
+      dataDeIncorporacao: formatDate(agenteCreat.dataDeIncorporacao),
     };
 
     return res.status(201).json(agenteCriado);
@@ -122,9 +122,9 @@ module.exports = {
   async partialUpdate(req, res) {
     const dadosAtualizados = { ...req.body };
 
-    if (typeof req.body !== 'object' || Array.isArray(req.body) || req.body === null) {
-      return res.status(400).json({ mensagem: "Payload inválido, deve ser um objeto JSON" });
-    }
+  if (typeof req.body !== 'object' || Array.isArray(req.body) || req.body === null) {
+    return res.status(400).json({ mensagem: "Payload inválido, deve ser um objeto JSON" });
+  }
 
     const id = Number(req.params.id);
     if (isNaN(id) || id <= 0) {
