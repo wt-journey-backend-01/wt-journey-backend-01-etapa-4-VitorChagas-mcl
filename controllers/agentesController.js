@@ -156,10 +156,9 @@ module.exports = {
   },
 
   async deleteById(req, res) {
-    const id = req.params.id;
-    const deletado = await agentesRepository.deleteById(id); 
-    if (!deletado) {
-      return res.status(404).json({ message: 'Agente não encontrado' });
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(404).json({ message: "ID inválido" });
     }
     res.status(204).send();
   }
