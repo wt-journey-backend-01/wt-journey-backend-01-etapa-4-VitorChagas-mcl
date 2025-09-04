@@ -41,18 +41,18 @@ module.exports = {
 
       res.json(agentes);
     } catch (error) {
-      res.status(500).json({ message: "Erro interno no servidor" });
+      res.status(500).json({ mensagem: "Erro interno no servidor" });
     }
   },
 
   async findById(req, res) {
     const id = Number(req.params.id);
     if (isNaN(id) || id <= 0) {
-    return res.status(404).json({ message: "ID inválido" });
+    return res.status(404).json({ mensagem: "ID inválido" });
     }
     const agente = await agentesRepository.findById(id);
     if (!agente) {
-      return res.status(404).json({ message: "Agente não encontrado" });
+      return res.status(404).json({ mensagem: "Agente não encontrado" });
     }
     agente.dataDeIncorporacao = formatDate(agente.dataDeIncorporacao);
     res.json(agente);
@@ -63,22 +63,29 @@ module.exports = {
     const errors = [];
 
     if (!nome || typeof nome !== 'string' || nome.trim() === '') {
-      errors.push({ field: "nome", message: "Nome é obrigatório e deve ser uma string não vazia" });
+      errors.push({ field: "nome", mensagem: "Nome é obrigatório e deve ser uma string não vazia" });
     }
     if (!cargo || typeof cargo !== 'string' || cargo.trim() === '') {
-      errors.push({ field: "cargo", message: "Cargo é obrigatório e deve ser uma string não vazia" });
+      errors.push({ field: "cargo", mensagem: "Cargo é obrigatório e deve ser uma string não vazia" });
     }
     if (!dataDeIncorporacao || !isValidDate(dataDeIncorporacao)) {
-      errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+      errors.push({ field: "dataDeIncorporacao", mensagem: "Data inválida ou no futuro" });
     }
 
     if (errors.length > 0) {
-      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+      return res.status(400).json({ status: 400, mensagem: "Parâmetros inválidos", errors });
     }
 
     const agenteCriado = await agentesRepository.create({ nome, dataDeIncorporacao, cargo });
-    agenteCriado.dataDeIncorporacao = formatDate(agenteCriado.dataDeIncorporacao);
-    return res.status(201).json(agenteCriado);
+
+    const agenteResponse = {
+      id: agenteCriado.id,
+      nome: agenteCriado.nome,
+      cargo: agenteCriado.cargo,
+      dataDeIncorporacao: formatDate(agenteCriado.dataDeIncorporacao),
+    };
+
+    return res.status(201).json(agenteResponse);
   },
 
   async update(req, res) {
@@ -86,22 +93,22 @@ module.exports = {
 
     const id = Number(req.params.id);
     if (isNaN(id) || id <= 0) {
-      return res.status(404).json({ message: "ID inválido" });
+      return res.status(404).json({ mensagem: "ID inválido" });
     }
 
     const errors = [];
     if (!dadosAtualizados.nome || typeof dadosAtualizados.nome !== 'string' || dadosAtualizados.nome.trim() === '') {
-      errors.push({ field: "nome", message: "Nome é obrigatório e deve ser uma string não vazia" });
+      errors.push({ field: "nome", mensagem: "Nome é obrigatório e deve ser uma string não vazia" });
     }
     if (!dadosAtualizados.cargo || typeof dadosAtualizados.cargo !== 'string' || dadosAtualizados.cargo.trim() === '') {
-      errors.push({ field: "cargo", message: "Cargo é obrigatório e deve ser uma string não vazia" });
+      errors.push({ field: "cargo", mensagem: "Cargo é obrigatório e deve ser uma string não vazia" });
     }
     if (!dadosAtualizados.dataDeIncorporacao || !isValidDate(dadosAtualizados.dataDeIncorporacao)) {
-      errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+      errors.push({ field: "dataDeIncorporacao", mensagem: "Data inválida ou no futuro" });
     }
 
     if (errors.length > 0) {
-      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+      return res.status(400).json({ status: 400, mensagem: "Parâmetros inválidos", errors });
     }
 
     const agenteAtualizado = await agentesRepository.update(id, dadosAtualizados); 
@@ -118,29 +125,29 @@ module.exports = {
     if (Object.keys(dadosAtualizados).length === 0) {
       return res.status(400).json({
         status: 400,
-        message: "Nenhum dado para atualizar foi fornecido."
+        mensagem: "Nenhum dado para atualizar foi fornecido."
       });
     }
 
     const id = Number(req.params.id);
     if (isNaN(id) || id <= 0) {
-      return res.status(404).json({ message: "ID inválido" });
+      return res.status(404).json({ mensagem: "ID inválido" });
     }
     const errors = [];
     if ('nome' in dadosAtualizados && 
         (typeof dadosAtualizados.nome !== 'string' || dadosAtualizados.nome.trim() === '')) {
-      errors.push({ field: "nome", message: "Nome deve ser uma string não vazia" });
+      errors.push({ field: "nome", mensagem: "Nome deve ser uma string não vazia" });
     }
     if ('cargo' in dadosAtualizados && 
         (typeof dadosAtualizados.cargo !== 'string' || dadosAtualizados.cargo.trim() === '')) {
-      errors.push({ field: "cargo", message: "Cargo deve ser uma string não vazia" });
+      errors.push({ field: "cargo", mensagem: "Cargo deve ser uma string não vazia" });
     }
     if ('dataDeIncorporacao' in dadosAtualizados && !isValidDate(dadosAtualizados.dataDeIncorporacao)) {
-      errors.push({ field: "dataDeIncorporacao", message: "Data inválida ou no futuro" });
+      errors.push({ field: "dataDeIncorporacao", mensagem: "Data inválida ou no futuro" });
     }
 
     if (errors.length > 0) {
-      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+      return res.status(400).json({ status: 400, mensagem: "Parâmetros inválidos", errors });
     }
 
     const agenteAtualizado = await agentesRepository.update(id, dadosAtualizados); 
@@ -154,11 +161,11 @@ module.exports = {
   async deleteById(req, res) {
     const id = Number(req.params.id);
     if (isNaN(id) || id <= 0) {
-      return res.status(404).json({ message: "ID inválido" });
+      return res.status(404).json({ mensagem: "ID inválido" });
     }
     const deletado = await agentesRepository.deleteById(id);
     if (!deletado) {
-      return res.status(404).json({ message: "Agente não encontrado" });
+      return res.status(404).json({ mensagem: "Agente não encontrado" });
     }
     return res.status(204).send();
   }

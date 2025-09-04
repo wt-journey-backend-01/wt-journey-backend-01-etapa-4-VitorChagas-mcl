@@ -45,27 +45,27 @@ async function create(req, res, next) {
     const errors = [];
 
     if (Object.keys(extras).length > 0) {
-      errors.push({ field: "extras", message: "Campos extras não permitidos" });
+      errors.push({ field: "extras", mensagem: "Campos extras não permitidos" });
     }
     if (!nome || typeof nome !== 'string' || nome.trim() === '') {
-      errors.push({ field: "nome", message: "Nome é obrigatório" });
+      errors.push({ field: "nome", mensagem: "Nome é obrigatório" });
     }
     if (!email || typeof email !== 'string' || email.trim() === '') {
-      errors.push({ field: "email", message: "Email é obrigatório" });
+      errors.push({ field: "email", mensagem: "Email é obrigatório" });
     }
     if (!senha) {
-      errors.push({ field: "senha", message: "Senha é obrigatória" });
+      errors.push({ field: "senha", mensagem: "Senha é obrigatória" });
     } else if (!validarSenha(senha)) {
-      errors.push({ field: "senha", message: "Senha deve ter no mínimo 8 caracteres, incluir letra maiúscula, minúscula, número e caractere especial" });
+      errors.push({ field: "senha", mensagem: "Senha deve ter no mínimo 8 caracteres, incluir letra maiúscula, minúscula, número e caractere especial" });
     }
 
     if (errors.length > 0) {
-      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", errors });
+      return res.status(400).json({ status: 400, mensagem: "Parâmetros inválidos", errors });
     }
 
     const usuarioExistente = await usuariosRepository.findByEmail(email);
     if (usuarioExistente) {
-      return res.status(400).json({ status: 400, message: "Email já está em uso" });
+      return res.status(400).json({ status: 400, mensagem: "Email já está em uso" });
     }
 
     const senhaHasheada = await bcrypt.hash(senha, 10);
@@ -87,9 +87,9 @@ async function logout(req, res){
 async function heshSenha(senha) {
   const tentativas = 10;
   if (!senha) {
-  errors.push({ field: "senha", message: "Senha é obrigatória" });
+  errors.push({ field: "senha", mensagem: "Senha é obrigatória" });
 } else if (!validarSenha(senha)) {
-  errors.push({ field: "senha", message: "Senha deve ter no mínimo 8 caracteres, incluir letra maiúscula, minúscula, número e caractere especial" });
+  errors.push({ field: "senha", mensagem: "Senha deve ter no mínimo 8 caracteres, incluir letra maiúscula, minúscula, número e caractere especial" });
 }
   return await bcrypt.hash(senha, tentativas);
 }
@@ -116,7 +116,7 @@ async function findByEmail(email) {
 async function me(req, res) {
   const usuario = await usuariosRepository.findById(req.user.id);
   if (!usuario) {
-    return res.status(404).json({ message: "Usuário não encontrado" });
+    return res.status(404).json({ mensagem: "Usuário não encontrado" });
   }
   res.json({ id: usuario.id, nome: usuario.nome, email: usuario.email });
 }
